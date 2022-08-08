@@ -90,7 +90,7 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
     dbconnection._cursor.execute(sql)
     results = dbconnection._cursor.fetchall()
     for result in results:
-        time.append(result[1])
+        time.append(result[1].replace(result[1][0:10], currentVal['datetime'][0:10]))
         low.append(result[2].strip())
         value = result[3].replace(",", "")
         value = value.replace(".", "")
@@ -127,14 +127,14 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
             bidMaxPosition = StartMatchPoint + bidResult[3]
             askMinPosition = StartMatchPoint + askResult[2]
             askMaxPosition = StartMatchPoint + askResult[3]
-            start = results[StartMatchPoint][1]
+            start = time[StartMatchPoint]
             if(dataCount <= bidCount):
                 event = 'SELL'
-                end = results[bidMinPosition][1]
+                end = time[bidMinPosition]
                 value = round(float(bidResult[1]) - float(bidResult[0]), productInfo[2])
             else:
                 event = 'BUY'
-                end = results[askMaxPosition][1]
+                end = time[askMaxPosition]
                 value = round(float(askResult[1]) - float(askResult[0]), productInfo[2])
             value = value
             time_format = "%d.%m.%Y %H:%M:%S"
