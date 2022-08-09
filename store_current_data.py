@@ -43,12 +43,12 @@ def storeResult(filename, productInfo, db):
                 # exit()
                 db.insert(
                     time=time,
-                    low=row[index].strip().replace(".", ""),
-                    bid=row[index+1].strip().replace(".", ""),
-                    ask=row[index+2].strip().replace(".", ""),
-                    high=row[index+3].strip().replace(".", ""),
-                    valuel=row[index+4].strip().replace(".", ""),
-                    valuer=row[index+5].strip().replace(".", ""),
+                    low=row[index].strip().replace('.', '').replace(',', '.'),
+                    bid=row[index+1].strip().replace('.', '').replace(',', '.'),
+                    ask=row[index+2].strip().replace('.', '').replace(',', '.'),
+                    high=row[index+3].strip().replace('.', '').replace(',', '.'),
+                    valuel=row[index+4].strip().replace('.', '').replace(',', '.'),
+                    valuer=row[index+5].strip().replace('.', '').replace(',', '.'),
                     result='',
                 )
         db.commit();

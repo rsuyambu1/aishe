@@ -28,12 +28,12 @@ def storeResult(filename, productInfo, product, db):
 
                 db.insert(
                     time=row[1],
-                    low=row[index].strip(),
-                    bid=row[index+1].strip(),
-                    ask=row[index+2].strip(),
-                    high=row[index+3].strip(),
-                    valuel=row[index+4].strip(),
-                    valuer=row[index+5].strip(),
+                    low=row[index].strip().replace('.', '').replace(',', '.'),
+                    bid=row[index+1].strip().replace('.', '').replace(',', '.'),
+                    ask=row[index+2].strip().replace('.', '').replace(',', '.'),
+                    high=row[index+3].strip().replace('.', '').replace(',', '.'),
+                    valuel=row[index+4].strip().replace('.', '').replace(',', '.'),
+                    valuer=row[index+5].strip().replace('.', '').replace(',', '.'),
                     result='',
                 )
         db.commit();
