@@ -92,17 +92,15 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
     for result in results:
         time.append(result[1].replace(result[1][0:10], currentVal['datetime'][0:10]))
         low.append(result[2].strip())
-        value = result[3].replace(",", "")
-        value = value.replace(".", "")
+        value = result[3]
         bid.append(value)
-        value = result[4].replace(",", "")
-        value = value.replace(".", "")
+        value = result[4]
         ask.append(value)
         high.append(result[5].strip())
         valueLR.append(result[6].strip() + ',' + result[7].strip())
     arr = np.array(valueLR)
     currentVal = currentVal[product]
-    print(currentVal, product)
+    print(currentVal, product, datetime.now())
     x = np.where(arr == currentVal)
     datalength = len(time)
     result = []
@@ -140,17 +138,18 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
             time_format = "%d.%m.%Y %H:%M:%S"
             dt1 = datetime.strptime(start, time_format)
             dt2 = datetime.strptime(end, time_format)
+            print("time",  start, end)
             diff = ((dt2 - dt1) // timedelta(minutes=1))  # minutes
             if ((start <= max_time)):
-                print('Product=',  product, ', CurrentValue=', currentVal, ',Start=', start, ', Duration=', diff, ', Event=', event, ', Value=', int(value))
-                result.append([product, start, diff, event, int(value)])
+                print('Product=',  product, ', CurrentValue=', currentVal, ',Start=', start, ', Duration=', diff, ', Event=', event, ', Value=', value)
+                result.append([product, start, diff, event, value])
         return result
     else:
         print('No matching')
         return False
 
-productInfo = {'EURUSD': [2, 100000, 5], 'USDDKK': [9, 10000, 4], 'USDCHF': [16, 100000, 5], 'EURCAD': [23, 100000, 5], 'USDCAD': [30, 100000, 5], 'EURGBP': [37, 100000, 5], 'GBPUSD': [44, 100000, 5],
-             'AUDUSD': [51, 100000, 5], 'EURCHF': [58, 100000, 5], 'AUDJPY': [65, 1, 1], 'XAUUSD': [72, 100, 2]}
+productInfo = {'EURUSD': [2, 100000, 5, 5], 'USDDKK': [9, 10000, 5, 5], 'USDCHF': [16, 100000, 5, 5], 'EURCAD': [23, 100000, 5, 5], 'USDCAD': [30, 100000, 5, 5], 'EURGBP': [37, 100000, 5, 5], 'GBPUSD': [44, 100000, 5, 5],
+             'AUDUSD': [51, 100000, 5,5], 'EURCHF': [58, 100000, 5, 5], 'AUDJPY': [65, 1, 3, 3], 'XAUUSD': [72, 100, 2, 2]}
 
 # Identify the date
 load_dotenv()
