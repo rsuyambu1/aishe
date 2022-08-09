@@ -106,6 +106,7 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
     result = []
     if(len(x[0])):
         for StartMatchPoint in x[0]:
+            tradingValue = '';
             endMatchPoint = StartMatchPoint + matchingPositionLength
             if(datalength < endMatchPoint):
                 matchingPositionLength = datalength - StartMatchPoint
@@ -129,20 +130,21 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
             if(dataCount <= bidCount):
                 event = 'SELL'
                 end = time[bidMinPosition]
-                value = round(float(bidResult[1]) - float(bidResult[0]), productInfo[2])
+                tradingValue = float(bidResult[1]) - float(bidResult[0])
             else:
                 event = 'BUY'
                 end = time[askMaxPosition]
-                value = round(float(askResult[1]) - float(askResult[0]), productInfo[2])
-            value = value
+                tradingValue = float(askResult[1]) - float(askResult[0])
+            tradingValue = tradingValue * productInfo[1]
+            tradingValue  = int(tradingValue)
             time_format = "%d.%m.%Y %H:%M:%S"
             dt1 = datetime.strptime(start, time_format)
             dt2 = datetime.strptime(end, time_format)
             print("time",  start, end)
             diff = ((dt2 - dt1) // timedelta(minutes=1))  # minutes
             if ((start <= max_time)):
-                print('Product=',  product, ', CurrentValue=', currentVal, ',Start=', start, ', Duration=', diff, ', Event=', event, ', Value=', value)
-                result.append([product, start, diff, event, value])
+                print('Product=',  product, ', CurrentValue=', currentVal, ',Start=', start, ', Duration=', diff, ', Event=', event, ', Value=', tradingValue)
+                result.append([product, start, diff, event, tradingValue])
         return result
     else:
         print('No matching')
