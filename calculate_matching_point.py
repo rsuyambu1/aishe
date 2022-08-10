@@ -175,6 +175,7 @@ db.connect()
 if(download_status):
     filename = destdir+filename
     resultdata = {}
+    resultStatus = True
     with open(resultfile, 'w', encoding='UTF8', newline='') as f:
         header = ['Product', 'Start', 'Duration', 'Event', 'Value']
         writer = csv.writer(f, delimiter=";", quoting=csv.QUOTE_MINIMAL)
@@ -186,16 +187,15 @@ if(download_status):
             # db.settable(tablename)
             results = matching(db, tablename, productInfo[product], matchingPositionLength, product, currentVal, duration)
             if(results):
+                resultStatus = False
                 for result in results:
                     csvwrite(writer, result)
-    # if (exists(resultfile)):
-    #     scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
-    #              "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
-    #     credentials = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_FILE, scope)
-    #     gc = gspread.authorize(credentials)
-    #     # # Read CSV file contents
-    #     content = open(resultfile, 'r').read()
-    #     gc.import_csv('196QyQuGmkYkUPKzp4xV3PDcveTEVjXsST0oXkajSRdY', content)
+    if(resultStatus):
+        with open(resultfile, 'w', encoding='UTF8', newline='') as f:
+            # message =
+            header = ['No matches found for next '+os.getenv('DURATION')+ ' Minutes']
+            writer = csv.writer(f, delimiter=";", quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(header)
 else:
     print("Download failed: status code")
 # files = os.listdir(destdir)
