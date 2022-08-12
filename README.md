@@ -1,4 +1,4 @@
-# aishe
+# Aishe Trading Platform
 Artificial Intelligence System Home Edition
 
 python3 -m venv aishtrade
@@ -12,5 +12,6 @@ pip3 install xlrd
 pip install requests
 pip install psycopg2
 pip install psycopg2-binary
+python -m pip install fastapi uvicorn[standard]
 
 
