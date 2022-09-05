@@ -149,11 +149,11 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
             # print("time",  start, end, max_time)
             diff = ((dt2 - dt1) // timedelta(minutes=1))  # minutes
             if ((start <= max_time)):
-                # print('Product=',  product, ', CurrentValue=', currentVal, ',Start=', start, ', Duration=', diff, ', Event=', event, ', Value=', tradingValue)
+                print('Product=',  product, ', CurrentValue=', currentVal, ',Start=', start, ', Duration=', diff, ', Event=', event, ', Value=', tradingValue)
                 result.append([product, start, diff, event, tradingValue])
             else:
                 # print("========================", product)
-                result.append([product, '', '', event, ''])
+                result.append([product, '', '', 'WAIT', ''])
         return result
     else:
         result = []

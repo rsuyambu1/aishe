@@ -7,7 +7,7 @@ pip install numpy
 
 [//]: # (pip install gspread)
 pip install python-dotenv
-
+pip install pandas
 pip3 install xlrd
 pip install requests
 pip install psycopg2
