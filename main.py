@@ -9,6 +9,9 @@ from lib.db import Database
 import xlrd
 from fastapi import FastAPI, Query
 from typing import Union
+from fastapi.responses import StreamingResponse
+import pandas as pd
+import io
 
 def download(url: str, dest_folder: str, filename:str):
     if not os.path.exists(dest_folder):
@@ -19,7 +22,7 @@ def download(url: str, dest_folder: str, filename:str):
 
     r = requests.get(url, stream=True)
     if r.ok:
-        print("saving to", os.path.abspath(file_path))
+        # print("saving to", os.path.abspath(file_path))
         with open(file_path, 'wb') as f:
             for chunk in r.iter_content(chunk_size=1024 * 10000):
                 if chunk:
@@ -28,7 +31,7 @@ def download(url: str, dest_folder: str, filename:str):
                     os.fsync(f.fileno())
                     return True
     else:  # HTTP status code 4XX/5XX
-        print("Download failed: status code {}\n{}".format(r.status_code, r.text))
+        # print("Download failed: status code {}\n{}".format(r.status_code, r.text))
         return False
 
 def minmax1 (x):
@@ -89,7 +92,6 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
     new_time = date_time_obj + time_change
     max_time = new_time.strftime("%d.%m.%Y %H:%M:%S")
     sql = "SELECT id, to_char(time, 'dd.mm.yyyy HH24:MI:SS') as currenttime, low, bid, ask, high, valuel, valuer, result  FROM " + tablename + " WHERE CAST(time AS time) > TIME '" + currentTime + "'";
-    print(sql)
     dbconnection._cursor.execute(sql)
     results = dbconnection._cursor.fetchall()
     for result in results:
@@ -103,7 +105,7 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
         valueLR.append(result[6].strip() + ',' + result[7].strip())
     arr = np.array(valueLR)
     currentVal = currentVal[product]
-    print(currentVal, product, datetime.now())
+    # print(currentVal, product, datetime.now())
     x = np.where(arr == currentVal)
     datalength = len(time)
     result = []
@@ -130,6 +132,7 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
             askMinPosition = StartMatchPoint + askResult[2]
             askMaxPosition = StartMatchPoint + askResult[3]
             start = time[StartMatchPoint]
+            event = 'WAIT'
             if(dataCount <= bidCount):
                 event = 'SELL'
                 end = time[bidMinPosition]
@@ -143,19 +146,23 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
             time_format = "%d.%m.%Y %H:%M:%S"
             dt1 = datetime.strptime(start, time_format)
             dt2 = datetime.strptime(end, time_format)
-            print("time",  start, end)
+            # print("time",  start, end, max_time)
             diff = ((dt2 - dt1) // timedelta(minutes=1))  # minutes
             if ((start <= max_time)):
-                print('Product=',  product, ', CurrentValue=', currentVal, ',Start=', start, ', Duration=', diff, ', Event=', event, ', Value=', tradingValue)
+                # print('Product=',  product, ', CurrentValue=', currentVal, ',Start=', start, ', Duration=', diff, ', Event=', event, ', Value=', tradingValue)
                 result.append([product, start, diff, event, tradingValue])
+            else:
+                # print("========================", product)
+                result.append([product, '', '', event, ''])
         return result
     else:
-        print('No matching')
-        return False
+        result = []
+        result.append([product, '', '', 'WAIT', ''])
+        return result
 
 app = FastAPI()
 
-@app.get("/")
+@app.get("/mat")
 async def read_items(q: Union[str, None] = Query(default=None, max_length=500)):
     if q:
         productInfo = {'EURUSD': [2, 100000, 5, 5], 'USDDKK': [9, 10000, 5, 5], 'USDCHF': [16, 100000, 5, 5], 'EURCAD': [23, 100000, 5, 5], 'USDCAD': [30, 100000, 5, 5], 'EURGBP': [37, 100000, 5, 5], 'GBPUSD': [44, 100000, 5, 5],
@@ -188,11 +195,10 @@ async def read_items(q: Union[str, None] = Query(default=None, max_length=500)):
         if(download_status):
             filename = destdir+filename
             resultdata = {}
-            resultStatus = True
             with open(resultfile, 'w', encoding='UTF8', newline='') as f:
-                header = ['Product', 'Start', 'Duration', 'Event', 'Value']
+                # header = ['Product', 'Start', 'Duration', 'Event', 'Value']
                 writer = csv.writer(f, delimiter=";", quoting=csv.QUOTE_MINIMAL)
-                writer.writerow(header)
+                # writer.writerow(header)
                 for info in productInfo:
                     product = info
                     if(info in currentVal.keys()):
@@ -201,16 +207,23 @@ async def read_items(q: Union[str, None] = Query(default=None, max_length=500)):
                         # db.settable(tablename)
                         results = matching(db, tablename, productInfo[product], matchingPositionLength, product, currentVal, duration)
                         if(results):
-                            resultStatus = False
                             for result in results:
                                 csvwrite(writer, result)
+                    else:
+                        result = [info, '', '', 'WAIT', '']
+                        writer.writerow(result)
 
-            if(resultStatus):
-                with open(resultfile, 'w', encoding='UTF8', newline='') as f:
-                    # message =
-                    header = ['No matches found for next '+os.getenv('DURATION')+ ' Minutes']
-                    writer = csv.writer(f, delimiter=";", quoting=csv.QUOTE_MINIMAL)
-                    writer.writerow(header)
+            # Solution 2
+            df = pd.read_csv(resultfile)
+            #df = pd.DataFrame(dict(col1=1, col2=2))
+            stream = io.StringIO()
+            df.to_csv(stream, index=False)
+            response = StreamingResponse(iter([stream.getvalue()]),
+                                         media_type="text/csv"
+                                         )
+            response.headers["Content-Disposition"] = "attachment; filename="+resultfilename
+            return  response
+            exit()
         else:
             print("Download failed: status code")
         db.close()

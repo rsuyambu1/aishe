@@ -27,12 +27,12 @@ class Database:
                 options="-c search_path="+self.dbname
             )
             cursor = connection.cursor()
-            print(
-                '------------------------------------------------------------'
-                '\n-# PostgreSQL connection & transaction is ACTIVE\n'
-            )
+            # print(
+            #     '------------------------------------------------------------'
+            #     '\n-# PostgreSQL connection & transaction is ACTIVE\n'
+            # )
         except (Exception, psycopg2.Error) as error:
-            print(error, error.pgcode, error.pgerror, sep='\n')
+            # print(error, error.pgcode, error.pgerror, sep='\n')
             sys.exit()
         else:
             self._connection = connection
@@ -46,7 +46,7 @@ class Database:
         try:
             self._connection
         except AttributeError:
-            print('ERROR: NOT Connected to Database')
+            # print('ERROR: NOT Connected to Database')
             sys.exit()
 
     # Set the table
@@ -58,16 +58,16 @@ class Database:
         self._check_connection()
         if Placeholder_value == None or None in Placeholder_value:
             self._cursor.execute(query)
-            print('-# ' + query.as_string(self._connection) + ';\n')
+            # print('-# ' + query.as_string(self._connection) + ';\n')
         else:
             self._cursor.execute(query, Placeholder_value)
-            print('-# ' + query.as_string(self._connection) % Placeholder_value + ';\n')
+            # print('-# ' + query.as_string(self._connection) % Placeholder_value + ';\n')
 
     # Commit the SQL changes to database
     def commit(self):
         self._check_connection()
         self._connection.commit()
-        print('-# COMMIT ' + str(self._counter) + ' changes\n')
+        # print('-# COMMIT ' + str(self._counter) + ' changes\n')
         self._counter = 0
 
     # Close the database connection
@@ -78,16 +78,16 @@ class Database:
         else:
             self._cursor.close()
             self._connection.close()
-        if self._counter > 0:
-            print(
-                '-# ' + str(self._counter) + ' changes NOT commited  CLOSE connection\n'
-                                             '------------------------------------------------------------\n'
-            )
-        else:
-            print(
-                '-# CLOSE connection\n'
-                '------------------------------------------------------------\n'
-            )
+        # if self._counter > 0:
+        #     print(
+        #         '-# ' + str(self._counter) + ' changes NOT commited  CLOSE connection\n'
+        #                                      '------------------------------------------------------------\n'
+        #     )
+        # else:
+        #     print(
+        #         '-# CLOSE connection\n'
+        #         '------------------------------------------------------------\n'
+        #     )
 
     # Insert records into a table
     def insert(self, **column_value):
@@ -99,7 +99,7 @@ class Database:
         record_to_insert = tuple(column_value.values())
         self._execute(insert_query, record_to_insert)
         self._counter += 1
-        print(self._counter)
+        # print(self._counter)
 
     # Bulk insert into a table
     def insert_many(self, columns, rows):
@@ -134,7 +134,7 @@ class Database:
         except psycopg2.ProgrammingError as error:
             selected = '# ERROR: ' + str(error)
         else:
-            print('-# ' + str(selected) + '\n')
+            # print('-# ' + str(selected) + '\n')
             return selected
 
     # Fetch all the records from the tables
@@ -154,7 +154,7 @@ class Database:
         except psycopg2.ProgrammingError as error:
             selected = '# ERROR: ' + str(error)
         else:
-            print('-# ' + str(selected) + '\n')
+            # print('-# ' + str(selected) + '\n')
             return selected
 
     # Update the records from the tables

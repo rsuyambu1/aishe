@@ -13,5 +13,7 @@ pip install requests
 pip install psycopg2
 pip install psycopg2-binary
 python -m pip install fastapi uvicorn[standard]
+pip install supervisor
+uvicorn main:app --host 0.0.0.0 --port 8000
 
 
