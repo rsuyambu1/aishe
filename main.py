@@ -162,7 +162,7 @@ def matching(db, tablename, productInfo, matchingPositionLength, product, curren
 
 app = FastAPI()
 
-@app.get("/mat")
+@app.get("/math")
 async def read_items(q: Union[str, None] = Query(default=None, max_length=500)):
     if q:
         productInfo = {'EURUSD': [2, 100000, 5, 5], 'USDDKK': [9, 10000, 5, 5], 'USDCHF': [16, 100000, 5, 5], 'EURCAD': [23, 100000, 5, 5], 'USDCAD': [30, 100000, 5, 5], 'EURGBP': [37, 100000, 5, 5], 'GBPUSD': [44, 100000, 5, 5],
