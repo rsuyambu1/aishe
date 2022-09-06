@@ -5,3 +5,4 @@ result.txt
 aishetrade/*
 current_data/*
 lib/__pycache__/
+server.py
