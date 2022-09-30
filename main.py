@@ -77,84 +77,113 @@ def getCurrentValFromCloud(destdir, filename, productInfo):
             return {'download_status': download_status, 'currentVal': currentVal}
     else:
         return {'download_status': False}
-
-def matching(db, tablename, productInfo, matchingPositionLength, product, currentVal, duration):
+def compareCurrentValue(db, tablename, currentTime, currentVal, product, matching_time=0):
+    if(matching_time > 2):
+        return []
     time = []
     low = []
     bid = []
     ask = []
     high = []
     valueLR = []
+    dbconnection = db.get_connection()
+    looplen = str(matching_time)
+    sql = "SELECT id, to_char(time, 'dd.mm.yyyy HH24:MI:SS') as currenttime, low, bid, ask, high, substring(valuel, 1,length(valuel)-"+looplen+") as valuel, substring(valuer, 1,length(valuer)-"+looplen+") as valuer, result  FROM " + tablename + " WHERE CAST(time AS time) > TIME '" + currentTime + "'";
+    dbconnection._cursor.execute(sql)
+    results = dbconnection._cursor.fetchall()
+    for result in results:
+        time.append(result[1].replace(result[1][0:10], currentVal['datetime'][0:10]))
+        # low.append(result[2].strip())
+        value = result[3]
+        bid.append(value)
+        value = result[4]
+        ask.append(value)
+        # high.append(result[5].strip())
+        valueLR.append(result[6].strip() + ',' + result[7].strip())
+        #valueLR.append(result[6][:len(result[6]) - matching_time]+','+result[7][:len(result[7]) - matching_time])
+    arr = np.array(valueLR)
+    x = np.where(arr == currentVal[product])
+    if (not len(x[0])):
+        newvalue = currentVal[product].split(',')
+        currentVal[product] = newvalue[0][:len(newvalue[0]) - 1]+','+newvalue[1][:len(newvalue[1]) - 1]
+        matching_time = matching_time +1
+        return compareCurrentValue(db, tablename, currentTime, currentVal, product, matching_time)
+    else:
+        return ([time, bid, ask, valueLR, currentVal[product], x, matching_time])
+
+def matching(db, tablename, productInfo, matchingPositionLength, product, currentVal, duration):
     currentTime = currentVal['time']
     dbconnection = db.get_connection()
     time_change = dt.timedelta(minutes=duration)
     date_time_obj = dt.datetime.strptime(currentVal['datetime'], '%d.%m.%Y %H:%M:%S')
     new_time = date_time_obj + time_change
     max_time = new_time.strftime("%d.%m.%Y %H:%M:%S")
-    sql = "SELECT id, to_char(time, 'dd.mm.yyyy HH24:MI:SS') as currenttime, low, bid, ask, high, valuel, valuer, result  FROM " + tablename + " WHERE CAST(time AS time) > TIME '" + currentTime + "'";
-    dbconnection._cursor.execute(sql)
-    results = dbconnection._cursor.fetchall()
-    for result in results:
-        time.append(result[1].replace(result[1][0:10], currentVal['datetime'][0:10]))
-        low.append(result[2].strip())
-        value = result[3]
-        bid.append(value)
-        value = result[4]
-        ask.append(value)
-        high.append(result[5].strip())
-        valueLR.append(result[6].strip() + ',' + result[7].strip())
-    arr = np.array(valueLR)
-    currentVal = currentVal[product]
-    # print(currentVal, product, datetime.now())
-    x = np.where(arr == currentVal)
-    datalength = len(time)
-    result = []
-    if(len(x[0])):
-        for StartMatchPoint in x[0]:
-            tradingValue = '';
-            endMatchPoint = StartMatchPoint + matchingPositionLength
-            if(datalength < endMatchPoint):
-                matchingPositionLength = datalength - StartMatchPoint
-            bidCompare = np.full(matchingPositionLength, bid[x[0][0]])
-            askCompare = np.full(matchingPositionLength, ask[x[0][0]])
-            bidMatch = np.split(bid, [StartMatchPoint, endMatchPoint])
-            bidMatch = bidMatch[1]
-            askMatch = np.split(ask, [StartMatchPoint, endMatchPoint])
-            askMatch = askMatch[1]
-            bidResult1 = bidMatch < bidCompare
-            askResult1 = askMatch < askCompare
-            bidResult = minmax1(bidMatch)
-            askResult = minmax1(askMatch)
-            bidCount = countOccurrences(bidResult1, True)
-            dataCount = round(len(bidResult1)/2)
-            bidMinPosition = StartMatchPoint + bidResult[2]
-            bidMaxPosition = StartMatchPoint + bidResult[3]
-            askMinPosition = StartMatchPoint + askResult[2]
-            askMaxPosition = StartMatchPoint + askResult[3]
-            start = time[StartMatchPoint]
-            event = 'WAIT'
-            if(dataCount <= bidCount):
-                event = 'SELL'
-                end = time[bidMinPosition]
-                tradingValue = float(bidResult[1]) - float(bidResult[0])
-            else:
-                event = 'BUY'
-                end = time[askMaxPosition]
-                tradingValue = float(askResult[1]) - float(askResult[0])
-            tradingValue = tradingValue * productInfo[1]
-            tradingValue  = int(tradingValue)
-            time_format = "%d.%m.%Y %H:%M:%S"
-            dt1 = datetime.strptime(start, time_format)
-            dt2 = datetime.strptime(end, time_format)
-            # print("time",  start, end, max_time)
-            diff = ((dt2 - dt1) // timedelta(minutes=1))  # minutes
-            if ((start <= max_time)):
-                print('Product=',  product, ', CurrentValue=', currentVal, ',Start=', start, ', Duration=', diff, ', Event=', event, ', Value=', tradingValue)
-                result.append([product, start, diff, event, tradingValue])
-            else:
-                # print("========================", product)
-                result.append([product, '', '', 'WAIT', ''])
-        return result
+    #match_date = currentVal['datetime'][0:10]
+    #currentVal = currentVal[product]
+    compare_result = compareCurrentValue(db, tablename, currentTime, currentVal, product)
+    x = []
+    if(len(compare_result)):
+        time = compare_result[0]
+        bid = compare_result[1]
+        ask = compare_result[2]
+        valueLR = compare_result[3]
+        currentVal = compare_result[4]
+        x = compare_result[5]
+        matching_time = compare_result[6]
+        arr = np.array(valueLR)
+        datalength = len(time)
+        x = np.where(arr == currentVal)
+        result = []
+        if(len(x[0])):
+            for StartMatchPoint in x[0]:
+                tradingValue = ''
+                endMatchPoint = StartMatchPoint + matchingPositionLength
+                if(datalength < endMatchPoint):
+                    matchingPositionLength = datalength - StartMatchPoint
+                bidCompare = np.full(matchingPositionLength, bid[x[0][0]])
+                askCompare = np.full(matchingPositionLength, ask[x[0][0]])
+                bidMatch = np.split(bid, [StartMatchPoint, endMatchPoint])
+                bidMatch = bidMatch[1]
+                askMatch = np.split(ask, [StartMatchPoint, endMatchPoint])
+                askMatch = askMatch[1]
+                bidResult1 = bidMatch < bidCompare
+                askResult1 = askMatch < askCompare
+                bidResult = minmax1(bidMatch)
+                askResult = minmax1(askMatch)
+                bidCount = countOccurrences(bidResult1, True)
+                dataCount = round(len(bidResult1)/2)
+                bidMinPosition = StartMatchPoint + bidResult[2]
+                bidMaxPosition = StartMatchPoint + bidResult[3]
+                askMinPosition = StartMatchPoint + askResult[2]
+                askMaxPosition = StartMatchPoint + askResult[3]
+                start = time[StartMatchPoint]
+                event = 'WAIT'
+                if(dataCount <= bidCount):
+                    event = 'SELL'
+                    end = time[bidMinPosition]
+                    tradingValue = float(bidResult[1]) - float(bidResult[0])
+                else:
+                    event = 'BUY'
+                    end = time[askMaxPosition]
+                    tradingValue = float(askResult[1]) - float(askResult[0])
+                tradingValue = tradingValue * productInfo[1]
+                tradingValue  = int(tradingValue)
+                time_format = "%d.%m.%Y %H:%M:%S"
+                dt1 = datetime.strptime(start, time_format)
+                dt2 = datetime.strptime(end, time_format)
+                # print("time",  start, end, max_time)
+                diff = ((dt2 - dt1) // timedelta(minutes=1))  # minutes
+                if ((start <= max_time)):
+                    print('Product=',  product, ', CurrentValue=', currentVal, ',Start=', start, ', Duration=', diff, ', Event=', event, ', Value=', tradingValue)
+                    result.append([product, start, diff, event, tradingValue])
+                else:
+                    # print("========================", product)
+                    result.append([product, '', '', 'WAIT', ''])
+            return result
+        else:
+            result = []
+            result.append([product, '', '', 'WAIT', ''])
+            return result
     else:
         result = []
         result.append([product, '', '', 'WAIT', ''])
